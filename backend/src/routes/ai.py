@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from typing import Optional, Dict, Any, List
 
-from ..middleware.auth import get_current_user
+from ..middleware.auth import get_current_user, get_optional_user
 from ..models.user import User
 from ..services.ai_service import ai_service, chatbot_service
 from ..services.analytics_service import analytics_service
@@ -104,7 +104,9 @@ async def analyze_rep_performance(
 
 # Chatbot Routes
 @router.post("/chatbot")
-async def chatbot(request: ChatRequest, current_user: Optional[User] = None):
+async def chatbot(
+    request: ChatRequest, current_user: Optional[User] = Depends(get_optional_user)
+):
     """AI Chatbot for customer queries"""
     if current_user:
         # Authenticated user
