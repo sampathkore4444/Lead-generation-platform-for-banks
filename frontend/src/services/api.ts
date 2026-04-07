@@ -14,7 +14,7 @@ import {
   LeadStatus,
 } from '../types';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_URL = ''; // Use relative URLs to leverage Vite proxy
 
 // Create axios instance
 const api: AxiosInstance = axios.create({
