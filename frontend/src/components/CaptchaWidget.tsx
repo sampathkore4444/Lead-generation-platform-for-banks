@@ -39,9 +39,7 @@ export const CaptchaWidget: React.FC<CaptchaWidgetProps> = ({ onVerify }) => {
     fetchCaptcha();
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const handleVerify = async () => {
     if (!answer.trim()) {
       setError('Please enter the answer');
       return;
@@ -51,10 +49,6 @@ export const CaptchaWidget: React.FC<CaptchaWidgetProps> = ({ onVerify }) => {
     setError('');
 
     try {
-      const formData = new FormData();
-      formData.append('token', token);
-      formData.append('answer', answer);
-
       const response = await fetch('/api/v1/mfa/captcha/verify', {
         method: 'POST',
         headers: {
@@ -79,6 +73,13 @@ export const CaptchaWidget: React.FC<CaptchaWidgetProps> = ({ onVerify }) => {
     }
   };
 
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleVerify();
+    }
+  };
+
   if (verified) {
     return (
       <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
@@ -96,7 +97,7 @@ export const CaptchaWidget: React.FC<CaptchaWidgetProps> = ({ onVerify }) => {
       </div>
       
       {question && (
-        <form onSubmit={handleSubmit}>
+        <div>
           <div className="mb-3">
             <label className="block text-sm text-gray-600 mb-1">
               {question}
@@ -105,6 +106,7 @@ export const CaptchaWidget: React.FC<CaptchaWidgetProps> = ({ onVerify }) => {
               type="number"
               value={answer}
               onChange={(e) => setAnswer(e.target.value)}
+              onKeyPress={handleKeyPress}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               placeholder="Enter answer"
               disabled={loading}
@@ -117,7 +119,8 @@ export const CaptchaWidget: React.FC<CaptchaWidgetProps> = ({ onVerify }) => {
           
           <div className="flex gap-2">
             <button
-              type="submit"
+              type="button"
+              onClick={handleVerify}
               disabled={loading}
               className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
             >
@@ -134,7 +137,7 @@ export const CaptchaWidget: React.FC<CaptchaWidgetProps> = ({ onVerify }) => {
               <RefreshCw className="w-4 h-4" />
             </button>
           </div>
-        </form>
+        </div>
       )}
     </div>
   );
