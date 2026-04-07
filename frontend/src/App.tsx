@@ -1,6 +1,7 @@
 // Main App with routing for all user roles
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import LeadForm from './components/LeadForm';
+import Chatbot from './components/Chatbot';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import LeadDetail from './pages/LeadDetail';
@@ -35,4 +36,14 @@ function App() {
   );
 }
 
-export default App;
+// Include Chatbot in all pages
+function AppWithChatbot() {
+  return (
+    <>
+      <App />
+      <Chatbot />
+    </>
+  );
+}
+
+export default AppWithChatbot;

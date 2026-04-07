@@ -80,6 +80,16 @@ class Settings(BaseSettings):
     ldap_bind_dn: Optional[str] = Field(default=None, env="LDAP_BIND_DN")
     ldap_bind_password: Optional[str] = Field(default=None, env="LDAP_BIND_PASSWORD")
 
+    # Ollama AI Configuration
+    ollama_url: str = Field(default="http://localhost:11434", env="OLLAMA_URL")
+    ollama_model: str = Field(default="llama3.2", env="OLLAMA_MODEL")
+    ollama_enabled: bool = Field(default=False, env="OLLAMA_ENABLED")
+
+    # AI Feature Flags
+    ai_scoring_enabled: bool = Field(default=False, env="AI_SCORING_ENABLED")
+    ai_chatbot_enabled: bool = Field(default=False, env="AI_CHATBOT_ENABLED")
+    ai_analytics_enabled: bool = Field(default=False, env="AI_ANALYTICS_ENABLED")
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
