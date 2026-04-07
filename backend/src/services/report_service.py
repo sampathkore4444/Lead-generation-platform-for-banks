@@ -14,7 +14,7 @@ from sqlalchemy import and_, or_, func
 
 from backend.src.models.lead import Lead
 from backend.src.models.user import User
-from backend.src.models.lead_audit_log import LeadAuditLog
+from backend.src.models import LeadAuditLog
 
 
 @dataclass

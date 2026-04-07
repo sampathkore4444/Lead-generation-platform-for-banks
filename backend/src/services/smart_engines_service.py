@@ -463,15 +463,6 @@ class SmartEnginesService:
         # Sort by score
         products.sort(key=lambda x: x["score"], reverse=True)
 
-        # Calculate confidence based on Jaccard scores
-                    "score": 65,
-                    "reason": "Higher amounts can benefit from fixed deposits",
-                }
-            )
-
-        # Sort by score
-        products.sort(key=lambda x: x["score"], reverse=True)
-
         # Calculate confidence based on best Jaccard score
         best_jaccard = products[0]["jaccard_score"] if products else 0
         confidence = min(0.95, 0.5 + best_jaccard * 0.5)
