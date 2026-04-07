@@ -1,10 +1,11 @@
 """
 MFA and CAPTCHA API Routes
 """
+
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
-from backend.src.database import get_db
+from backend.src.config.database import get_db
 from backend.src.middleware.auth import get_current_user
 from backend.src.models.user import User
 from backend.src.services.mfa_service import MFAService, CaptchaService
@@ -16,18 +17,18 @@ router = APIRouter(prefix="/api/v1/mfa", tags=["MFA"])
 async def setup_mfa(
     request: Request,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """
     Setup MFA for the current user
     Returns secret and QR code for authenticator app
     """
     secret, qr_code = await MFAService.setup_mfa(db, current_user.id)
-    
+
     return {
         "secret": secret,
         "qr_code": f"data:image/png;base64,{qr_code}",
-        "message": "Scan QR code with your authenticator app, then verify with a code"
+        "message": "Scan QR code with your authenticator app, then verify with a code",
     }
 
 
@@ -36,13 +37,13 @@ async def enable_mfa(
     code: str,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """
     Enable MFA after verifying a code from authenticator app
     """
     success = await MFAService.enable_mfa(db, current_user.id, code)
-    
+
     if success:
         return {"message": "MFA enabled successfully"}
     else:
@@ -54,7 +55,7 @@ async def verify_mfa(
     code: str,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """
     Verify MFA code during login
@@ -62,9 +63,9 @@ async def verify_mfa(
     # This is handled in the auth flow, but providing endpoint for testing
     if not current_user.mfa_enabled:
         raise HTTPException(status_code=400, detail="MFA not enabled for this user")
-    
+
     success = await MFAService.verify_mfa(db, current_user.id, code)
-    
+
     return {"valid": success}
 
 
@@ -73,13 +74,13 @@ async def disable_mfa(
     password: str,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """
     Disable MFA (requires password)
     """
     success = await MFAService.disable_mfa(db, current_user.id, password)
-    
+
     if success:
         return {"message": "MFA disabled successfully"}
     else:
@@ -91,20 +92,22 @@ async def regenerate_backup_codes(
     password: str,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """
     Regenerate backup codes (requires password)
     """
     codes = await MFAService.regenerate_backup_codes(db, current_user.id, password)
-    
+
     if codes:
         return {
             "backup_codes": codes,
-            "message": "Save these backup codes in a secure place"
+            "message": "Save these backup codes in a secure place",
         }
     else:
-        raise HTTPException(status_code=400, detail="Invalid password or MFA not enabled")
+        raise HTTPException(
+            status_code=400, detail="Invalid password or MFA not enabled"
+        )
 
 
 # CAPTCHA endpoints
@@ -118,11 +121,11 @@ async def get_captcha():
     """
     challenge = CaptchaService.generate_challenge()
     captcha_store[challenge["token"]] = challenge
-    
+
     return {
         "token": challenge["token"],
         "question": challenge["question"],
-        "type": challenge["type"]
+        "type": challenge["type"],
     }
 
 
@@ -132,18 +135,18 @@ async def verify_captcha(token: str, answer: str):
     Verify CAPTCHA answer
     """
     challenge = captcha_store.get(token)
-    
+
     if not challenge:
         raise HTTPException(status_code=400, detail="Invalid CAPTCHA token")
-    
+
     # Check answer
     is_valid = CaptchaService.verify_answer(token, answer, challenge["answer_hash"])
-    
+
     if is_valid:
         # Remove from store after successful verification
         captcha_store.pop(token, None)
         return {"valid": True}
-    
+
     return {"valid": False}
 
 

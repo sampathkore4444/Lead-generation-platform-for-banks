@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
-from backend.src.database import get_db
+from backend.src.config.database import get_db
 from backend.src.middleware.auth import get_current_user
 from backend.src.models.user import User
 from backend.src.services.report_service import ReportService

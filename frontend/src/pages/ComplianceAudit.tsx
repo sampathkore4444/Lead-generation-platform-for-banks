@@ -8,7 +8,7 @@ import { Input, Select } from '../components/Input';
 import { 
   Shield, Search, Calendar, Download, 
   LogOut, RefreshCw, FileText,
-  Eye, Edit, Trash2, Download
+  Eye, Edit, Trash2
 } from 'lucide-react';
 
 interface AuditLog {

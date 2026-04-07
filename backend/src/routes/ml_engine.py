@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
 
-from backend.src.database import get_db
+from backend.src.config.database import get_db
 from backend.src.middleware.auth import get_current_user
 from backend.src.models.user import User
 from backend.src.models.lead import Lead
