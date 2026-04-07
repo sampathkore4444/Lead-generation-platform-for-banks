@@ -285,75 +285,185 @@ class SmartEnginesService:
 
     # ==================== PRODUCT RECOMMENDATION ENGINE ====================
 
+    def _jaccard_similarity(self, set1: set, set2: set) -> float:
+        """
+        Calculate Jaccard similarity between two sets
+        Jaccard = |A ∩ B| / |A ∪ B|
+        Returns value between 0 and 1
+        """
+        if not set1 or not set2:
+            return 0.0
+        intersection = len(set1.intersection(set2))
+        union = len(set1.union(set2))
+        return intersection / union if union > 0 else 0.0
+
+    def _get_lead_attributes(self, lead_data: Dict) -> set:
+        """
+        Extract lead attributes as a set for Jaccard comparison
+        """
+        attributes = set()
+
+        # Product interest
+        product = lead_data.get("product", "").lower()
+        if product:
+            attributes.add(product)
+            # Add related attributes
+            if "loan" in product:
+                attributes.add("needs_credit")
+                attributes.add("has_financial_goal")
+            if "saving" in product:
+                attributes.add("wants_to_save")
+            if "credit" in product:
+                attributes.add("needs_credit")
+            if "home" in product or "house" in product:
+                attributes.add("property_related")
+                attributes.add("long_term")
+            if "business" in product:
+                attributes.add("business_owner")
+                attributes.add("commercial")
+
+        # Amount-based attributes
+        amount = lead_data.get("amount", 0)
+        if amount > 0:
+            attributes.add("has_specified_amount")
+            if amount < 20000000:
+                attributes.add("small_amount")
+            elif amount < 100000000:
+                attributes.add("medium_amount")
+            else:
+                attributes.add("large_amount")
+
+        # Phone-based attributes (Lao market)
+        phone = lead_data.get("phone", "")
+        if phone.startswith("20"):
+            attributes.add("individual_phone")
+        if phone.startswith("21") or phone.startswith("30"):
+            attributes.add("business_phone")
+
+        # Status attributes
+        status = lead_data.get("status", "")
+        if status == "new":
+            attributes.add("new_customer")
+        elif status in ["contacted", "qualified"]:
+            attributes.add("warm_lead")
+
+        return attributes
+
+    def _get_product_attributes(self, product_type: str) -> set:
+        """
+        Get product attribute set for Jaccard comparison
+        """
+        # Product feature sets
+        product_features = {
+            "savings_account": {
+                "wants_to_save",
+                "needs_banking",
+                "individual_phone",
+                "small_amount",
+                "medium_amount",
+                "new_customer",
+            },
+            "personal_loan": {
+                "needs_credit",
+                "has_financial_goal",
+                "individual_phone",
+                "small_amount",
+                "medium_amount",
+                "personal_use",
+            },
+            "home_loan": {
+                "needs_credit",
+                "has_financial_goal",
+                "property_related",
+                "long_term",
+                "large_amount",
+                "medium_amount",
+            },
+            "credit_card": {
+                "needs_credit",
+                "individual_phone",
+                "small_amount",
+                "has_specified_amount",
+            },
+            "business_loan": {
+                "needs_credit",
+                "business_owner",
+                "commercial",
+                "has_financial_goal",
+                "business_phone",
+                "large_amount",
+            },
+            "fixed_deposit": {
+                "wants_to_save",
+                "medium_amount",
+                "large_amount",
+                "long_term",
+                "has_specified_amount",
+            },
+        }
+
+        return product_features.get(product_type, set())
+
     async def recommend_products(self, lead_data: Dict) -> ProductRecommendationResult:
         """
-        Recommend best products for a lead based on profile
+        Recommend best products for a lead using Jaccard similarity
         """
         products = []
+
+        # Get lead attributes for Jaccard
+        lead_attributes = self._get_lead_attributes(lead_data)
 
         # Analyze lead profile
         product = lead_data.get("product", "")
         amount = lead_data.get("amount", 0)
-        phone = lead_data.get("phone", "")
 
-        # Savings Account - base product
-        savings_score = 70
-        if not product:
-            savings_score += 30
+        # Product list with their attribute sets
+        product_list = [
+            ("savings_account", "Savings Account", "Foundational banking product"),
+            ("personal_loan", "Personal Loan", "Quick personal financing"),
+            ("home_loan", "Home Loan", "Property financing"),
+            ("credit_card", "Credit Card", "Credit for everyday use"),
+            ("business_loan", "Business Loan", "Business financing"),
+            ("fixed_deposit", "Fixed Deposit", "Secure savings"),
+        ]
 
-        products.append(
-            {
-                "product": ProductRecommendation.SAVINGS_ACCOUNT.value,
-                "score": savings_score,
-                "reason": "Foundational banking product for all customers",
-            }
-        )
+        # Calculate Jaccard similarity for each product
+        for prod_key, prod_name, prod_desc in product_list:
+            product_attrs = self._get_product_attributes(prod_key)
+            jaccard_score = self._jaccard_similarity(lead_attributes, product_attrs)
 
-        # Personal Loan
-        if product == "personal_loan" or (amount > 0 and amount < 100000000):
+            # Convert to 0-100 score (weight: 70% Jaccard + 30% rules)
+            base_score = jaccard_score * 100
+
+            # Add rule-based boost for explicit product interest
+            if product == prod_key:
+                base_score = min(95, base_score + 25)
+
+            # Add amount-based adjustments
+            if prod_key == "personal_loan" and 0 < amount < 100000000:
+                base_score = min(95, base_score + 10)
+            elif prod_key == "home_loan" and 50000000 <= amount <= 500000000:
+                base_score = min(95, base_score + 10)
+            elif prod_key == "credit_card" and amount < 20000000:
+                base_score = min(95, base_score + 10)
+
             products.append(
                 {
-                    "product": ProductRecommendation.PERSONAL_LOAN.value,
-                    "score": 85,
-                    "reason": "Fits loan amount range and stated interest",
+                    "product": prod_key,
+                    "name": prod_name,
+                    "jaccard_score": round(jaccard_score, 3),
+                    "score": int(base_score),
+                    "reason": prod_desc,
+                    "matching_attributes": list(
+                        lead_attributes.intersection(product_attrs)
+                    ),
                 }
             )
 
-        # Home Loan
-        if product == "home_loan" or (amount > 50000000 and amount < 500000000):
-            products.append(
-                {
-                    "product": ProductRecommendation.HOME_LOAN.value,
-                    "score": 80,
-                    "reason": "Long-term loan for significant purchases",
-                }
-            )
+        # Sort by score
+        products.sort(key=lambda x: x["score"], reverse=True)
 
-        # Credit Card
-        if product == "credit_card" or amount < 20000000:
-            products.append(
-                {
-                    "product": ProductRecommendation.CREDIT_CARD.value,
-                    "score": 75,
-                    "reason": "Quick access to credit for everyday needs",
-                }
-            )
-
-        # Business Loan (if phone suggests business)
-        if phone.startswith("21") or phone.startswith("30"):
-            products.append(
-                {
-                    "product": ProductRecommendation.BUSINESS_LOAN.value,
-                    "score": 70,
-                    "reason": "Business phone pattern detected",
-                }
-            )
-
-        # Fixed Deposit
-        if not product and amount > 50000000:
-            products.append(
-                {
-                    "product": ProductRecommendation.FIXED_DEPOSIT.value,
+        # Calculate confidence based on Jaccard scores
                     "score": 65,
                     "reason": "Higher amounts can benefit from fixed deposits",
                 }
@@ -362,17 +472,25 @@ class SmartEnginesService:
         # Sort by score
         products.sort(key=lambda x: x["score"], reverse=True)
 
+        # Calculate confidence based on best Jaccard score
+        best_jaccard = products[0]["jaccard_score"] if products else 0
+        confidence = min(0.95, 0.5 + best_jaccard * 0.5)
+
+        # Build reasoning with matching attributes
+        matching_attrs = products[0].get("matching_attributes", []) if products else []
+        reasoning = [
+            f"Jaccard similarity: {best_jaccard:.1%}",
+            f"Matched attributes: {', '.join(matching_attrs) if matching_attrs else 'none'}",
+            f"Customer interest: {product or 'exploring options'}",
+        ]
+
         return ProductRecommendationResult(
             products=products[:3],
             primary_recommendation=(
                 products[0]["product"] if products else "savings_account"
             ),
-            confidence=0.85,
-            reasoning=[
-                "Based on product interest: " + (product or "none specified"),
-                "Loan amount analysis: " + str(amount),
-                "Customer profile matching",
-            ],
+            confidence=round(confidence, 2),
+            reasoning=reasoning,
         )
 
     # ==================== CHURN PREDICTION ENGINE ====================
