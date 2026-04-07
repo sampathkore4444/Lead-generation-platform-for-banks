@@ -9,6 +9,16 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+# Try to import ldap3, but don't fail if not installed
+try:
+    from ldap3 import SUBTREE, ALL
+
+    LDAP3_AVAILABLE = True
+except ImportError:
+    LDAP3_AVAILABLE = False
+    SUBTREE = "SUBTREE"  # Placeholder
+    ALL = "ALL"
+
 
 @dataclass
 class LDAPUser:
@@ -68,9 +78,12 @@ class LDAPService:
             logger.warning("LDAP authentication is disabled")
             return None
 
+        if not LDAP3_AVAILABLE:
+            logger.error("ldap3 package not installed. Run: pip install ldap3")
+            return None
+
         try:
-            import ldap3
-            from ldap3 import Server, Connection, ALL, SUBTREE
+            from ldap3 import Server, Connection
 
             # Connect to LDAP server
             server = Server(self.server, use_ssl=self.use_ssl, get_info=ALL)
@@ -121,8 +134,6 @@ class LDAPService:
     def _get_user_info(self, conn, user_dn: str) -> LDAPUser:
         """Extract user information from LDAP"""
         try:
-            import ldap3
-
             conn.search(
                 search_base=user_dn,
                 search_filter="(objectClass=*)",
