@@ -205,8 +205,8 @@ class LDAPService:
         Sync user from LDAP to local database
         Returns user dict or None
         """
-        from backend.src.models.user import User
-        from backend.src.services.auth_service import AuthService
+        from ..models.user import User
+        from ..services.auth_service import AuthService
 
         # This would normally authenticate with LDAP to get full info
         # For now, create a placeholder
@@ -233,7 +233,7 @@ class LDAPAuthService:
     """
 
     def __init__(self):
-        from backend.src.config.settings import settings
+        from ..config.settings import settings
 
         self.ldap_service = LDAPService(
             {

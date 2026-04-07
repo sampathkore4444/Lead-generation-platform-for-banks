@@ -11,8 +11,8 @@ from typing import List, Dict, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
 
-from backend.src.models.lead import Lead
-from backend.src.models import LeadAuditLog
+from ..models.lead import Lead
+from ..models import LeadAuditLog
 
 
 class AnonymizationService:

@@ -12,9 +12,9 @@ from dataclasses import dataclass
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_, func
 
-from backend.src.models.lead import Lead
-from backend.src.models.user import User
-from backend.src.models import LeadAuditLog
+from ..models.lead import Lead
+from ..models.user import User
+from ..models import LeadAuditLog
 
 
 @dataclass

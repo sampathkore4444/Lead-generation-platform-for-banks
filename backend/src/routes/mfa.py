@@ -5,10 +5,10 @@ MFA and CAPTCHA API Routes
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
-from backend.src.config.database import get_db
-from backend.src.middleware.auth import get_current_user
-from backend.src.models.user import User
-from backend.src.services.mfa_service import MFAService, CaptchaService
+from ..config.database import get_db
+from ..middleware.auth import get_current_user
+from ..models.user import User
+from ..services.mfa_service import MFAService, CaptchaService
 
 router = APIRouter(prefix="/api/v1/mfa", tags=["MFA"])
 

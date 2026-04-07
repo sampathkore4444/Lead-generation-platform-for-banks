@@ -7,11 +7,11 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
 
-from backend.src.config.database import get_db
-from backend.src.middleware.auth import get_current_user
-from backend.src.models.user import User
-from backend.src.models.lead import Lead
-from backend.src.services.smart_engines_service import smart_engines
+from ..config.database import get_db
+from ..middleware.auth import get_current_user
+from ..models.user import User
+from ..models.lead import Lead
+from ..services.smart_engines_service import smart_engines
 
 router = APIRouter(prefix="/api/v1/smart-engines", tags=["Smart Engines"])
 

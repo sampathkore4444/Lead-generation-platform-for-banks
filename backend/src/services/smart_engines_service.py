@@ -153,12 +153,12 @@ class SmartEnginesService:
     """
 
     def __init__(self):
-        from backend.src.config.settings import settings
+        from ..config.settings import settings
 
         self.settings = settings
-        self.ollama_enabled = settings.OLLAMA_ENABLED
-        self.ollama_url = settings.OLLAMA_URL
-        self.ollama_model = settings.OLLAMA_MODEL
+        self.ollama_enabled = settings.ollama_enabled
+        self.ollama_url = settings.ollama_url
+        self.ollama_model = settings.ollama_model
 
     async def _call_ollama(self, prompt: str, system_prompt: str = "") -> str:
         """

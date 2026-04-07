@@ -6,10 +6,10 @@ from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
-from backend.src.config.database import get_db
-from backend.src.middleware.auth import get_current_user
-from backend.src.models.user import User
-from backend.src.services.anonymization_service import (
+from ..config.database import get_db
+from ..middleware.auth import get_current_user
+from ..models.user import User
+from ..services.anonymization_service import (
     AnonymizationService,
     ScheduledJobService,
 )
@@ -135,8 +135,8 @@ async def get_ldap_config(current_user: User = Depends(get_current_user)):
     if current_user.role != "it_admin":
         raise HTTPException(status_code=403, detail="IT admin access required")
 
-    from backend.src.services.ldap_service import LDAPService
-    from backend.src.config.settings import settings
+    from ..services.ldap_service import LDAPService
+    from ..config.settings import settings
 
     ldap_service = LDAPService({"LDAP_ENABLED": settings.LDAP_ENABLED})
 
@@ -161,8 +161,8 @@ async def test_ldap_connection(
     if current_user.role != "it_admin":
         raise HTTPException(status_code=403, detail="IT admin access required")
 
-    from backend.src.services.ldap_service import LDAPService
-    from backend.src.config.settings import settings
+    from ..services.ldap_service import LDAPService
+    from ..config.settings import settings
 
     ldap_service = LDAPService(
         {
@@ -204,7 +204,7 @@ async def get_system_info(current_user: User = Depends(get_current_user)):
     if current_user.role != "it_admin":
         raise HTTPException(status_code=403, detail="IT admin access required")
 
-    from backend.src.config.settings import settings
+    from ..config.settings import settings
 
     return {
         "app_name": "STBank Laos Lead Generation Platform",
