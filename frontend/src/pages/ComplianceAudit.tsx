@@ -6,7 +6,7 @@ import { User } from '../types';
 import { Button } from '../components/Button';
 import { Input, Select } from '../components/Input';
 import { 
-  Shield, Search, Calendar, Download, 
+  Shield, Search, Download, 
   LogOut, RefreshCw, FileText,
   Eye, Edit, Trash2
 } from 'lucide-react';

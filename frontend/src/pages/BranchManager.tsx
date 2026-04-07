@@ -5,11 +5,11 @@ import { leadApi } from '../services/api';
 import { LeadListItem, LeadStats, User } from '../types';
 import { authApi } from '../services/api';
 import { Button } from '../components/Button';
-import { Input, Select } from '../components/Input';
+import { Select } from '../components/Input';
 import { 
   Users, TrendingUp, Clock, Phone, 
   Download, LogOut, Building,
-  Calendar, Filter, RefreshCw
+  Calendar, RefreshCw
 } from 'lucide-react';
 import { clearTokens, getAccessToken } from '../services/api';
 

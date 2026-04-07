@@ -5,7 +5,7 @@ import { leadApi } from '../services/api';
 import { LeadListItem, LeadStats, LeadStatus } from '../types';
 import { Button } from '../components/Button';
 import { 
-  Phone, User, Clock, TrendingUp, AlertCircle, 
+  Phone,  Clock, TrendingUp,  
   PhoneIncoming, UserCheck, UserPlus, XCircle, Download
 } from 'lucide-react';
 import { clearTokens, getAccessToken } from '../services/api';
