@@ -8,6 +8,7 @@ import { Input, Select, Checkbox } from './Input';
 import { leadApi } from '../services/api';
 import { LeadFormData, ProductType, PreferredTime } from '../types';
 import { Phone, User, CreditCard, AlertCircle, CheckCircle } from 'lucide-react';
+import { CaptchaWidget } from './CaptchaWidget';
 
 // Validation schema
 const leadSchema = Joi.object({
@@ -44,6 +45,7 @@ export function LeadForm({ onSuccess }: LeadFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [captchaVerified, setCaptchaVerified] = useState(false);
 
   const {
     register,
@@ -57,6 +59,12 @@ export function LeadForm({ onSuccess }: LeadFormProps) {
   const selectedProduct = watch('product');
 
   const onSubmit = async (data: LeadFormData) => {
+    // Check captcha verification first
+    if (!captchaVerified) {
+      setSubmitError('Please complete the security check');
+      return;
+    }
+    
     setIsSubmitting(true);
     setSubmitError(null);
 
@@ -68,6 +76,8 @@ export function LeadForm({ onSuccess }: LeadFormProps) {
       setSubmitError(
         error.response?.data?.detail || 'Failed to submit. Please try again.'
       );
+      // Reset captcha on error
+      setCaptchaVerified(false);
     } finally {
       setIsSubmitting(false);
     }
@@ -195,6 +205,11 @@ export function LeadForm({ onSuccess }: LeadFormProps) {
           {...register('consent_given')}
           error={errors.consent_given?.message}
         />
+
+        {/* CAPTCHA */}
+        <div className="mt-4">
+          <CaptchaWidget onVerify={(valid) => setCaptchaVerified(valid)} />
+        </div>
 
         {/* Submit Button */}
         <Button

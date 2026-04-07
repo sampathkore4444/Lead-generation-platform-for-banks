@@ -75,10 +75,21 @@ class Settings(BaseSettings):
     )
 
     # SAML/LDAP Integration
+    ldap_enabled: bool = Field(default=False, env="LDAP_ENABLED")
     ldap_server: Optional[str] = Field(default=None, env="LDAP_SERVER")
     ldap_base_dn: Optional[str] = Field(default=None, env="LDAP_BASE_DN")
     ldap_bind_dn: Optional[str] = Field(default=None, env="LDAP_BIND_DN")
     ldap_bind_password: Optional[str] = Field(default=None, env="LDAP_BIND_PASSWORD")
+    ldap_use_ssl: bool = Field(default=True, env="LDAP_USE_SSL")
+
+    # WhatsApp/Line Integration
+    whatsapp_enabled: bool = Field(default=False, env="WHATSAPP_ENABLED")
+    whatsapp_api_url: Optional[str] = Field(default=None, env="WHATSAPP_API_URL")
+    whatsapp_token: Optional[str] = Field(default=None, env="WHATSAPP_TOKEN")
+    line_enabled: bool = Field(default=False, env="LINE_ENABLED")
+    line_channel_id: Optional[str] = Field(default=None, env="LINE_CHANNEL_ID")
+    line_channel_secret: Optional[str] = Field(default=None, env="LINE_CHANNEL_SECRET")
+    line_access_token: Optional[str] = Field(default=None, env="LINE_ACCESS_TOKEN")
 
     # Ollama AI Configuration
     ollama_url: str = Field(default="http://localhost:11434", env="OLLAMA_URL")
@@ -89,6 +100,15 @@ class Settings(BaseSettings):
     ai_scoring_enabled: bool = Field(default=False, env="AI_SCORING_ENABLED")
     ai_chatbot_enabled: bool = Field(default=False, env="AI_CHATBOT_ENABLED")
     ai_analytics_enabled: bool = Field(default=False, env="AI_ANALYTICS_ENABLED")
+
+    # Data Residency (Lao compliance)
+    data_residency_country: str = Field(default="Laos", env="DATA_RESIDENCY_COUNTRY")
+    audit_retention_years: int = Field(default=7, env="AUDIT_RETENTION_YEARS")
+
+    # Anonymization Settings
+    anonymization_retention_days: int = Field(
+        default=90, env="ANONYMIZATION_RETENTION_DAYS"
+    )
 
     class Config:
         env_file = ".env"

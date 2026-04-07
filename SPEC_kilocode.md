@@ -355,7 +355,115 @@ POST   /api/v1/anonymize     - Trigger anonymization job
 ---
 
 **Document:** SPEC_kilocode.md  
-**Version:** 1.0  
+**Version:** 1.1  
+**Date:** 2026-04-07  
+**Prepared for:** STBank Laos, Retail Banking Division
+
+---
+
+## 12. Smart Engines (AI/ML)
+
+### 12.1 Credit Scoring Engine
+- Calculate credit score (300-850)
+- Categorize: Excellent, Good, Fair, Poor
+- Factors analysis
+- Max loan amount recommendation
+- Suggested interest rate
+
+### 12.2 Product Recommendation Engine
+- Multi-product scoring
+- Primary recommendation
+- Confidence level
+- Personalized reasoning
+
+### 12.3 Churn Prediction Engine
+- Probability scoring (0-1)
+- Risk level categorization
+- Contributing factors
+- Retention suggestions
+
+### 12.4 Optimal Contact Time Engine
+- Best day prediction
+- Best time prediction
+- Confidence scoring
+- Reasoning
+
+### 12.5 Speech/Voice Analytics
+- Sentiment analysis
+- Keyword extraction
+- Topic detection
+- Talk ratio analysis
+- Emotion detection
+- Compliance monitoring
+
+### 12.6 Conversation Intelligence
+- Call summarization
+- Action items extraction
+- Lead qualification status
+- Objection identification
+- Closing signal detection
+- Next action recommendation
+
+### 12.7 Risk Assessment Engine
+- Overall risk score (0-100)
+- Multi-factor risk analysis
+- Fraud indicator detection
+- Mitigation suggestions
+- Credit considerations
+
+### 12.8 Auto-Scheduler
+- Automated scheduling
+- Channel selection (call/WhatsApp)
+- Duration prediction
+- Priority assignment
+- Smart follow-up timing
+
+---
+
+## 13. Smart Engines API Endpoints
+
+```
+Smart Engines:
+POST /api/v1/smart-engines/credit-score         - Credit scoring
+POST /api/v1/smart-engines/recommendations       - Product recommendations
+POST /api/v1/smart-engines/churn-prediction      - Churn prediction
+POST /api/v1/smart-engines/optimal-contact-time  - Contact time
+POST /api/v1/smart-engines/voice-analytics       - Voice analysis
+POST /api/v1/smart-engines/conversation-intelligence - Conversation AI
+POST /api/v1/smart-engines/risk-assessment       - Risk assessment
+POST /api/v1/smart-engines/auto-schedule         - Auto-scheduler
+POST /api/v1/smart-engines/comprehensive-analysis - All engines
+```
+
+---
+
+## 14. On-Premise Security Features
+
+### 14.1 MFA (TOTP)
+- Google Authenticator compatible
+- Backup codes
+- QR code setup
+- Enable/disable endpoints
+
+### 14.2 LDAP/AD Integration
+- Active Directory authentication
+- Group-based role mapping
+- Hybrid auth (LDAP + local)
+
+### 14.3 Self-hosted CAPTCHA
+- Math-based challenges
+- Token verification
+- Honeypot detection
+
+### 14.4 Data Compliance
+- 90-day anonymization
+- 7-year audit retention
+- Data residency (Laos)
+
+---
+
+**Document:** SPEC_kilocode.md  
+**Version:** 1.1  
 **Date:** 2026-04-07  
 **Prepared for:** STBank Laos, Retail Banking Division
 

@@ -29,12 +29,22 @@ class User(Base):
     email = Column(String(255), unique=True, index=True, nullable=False)
     username = Column(String(100), unique=True, index=True, nullable=False)
     hashed_password = Column(String(255), nullable=False)
+    password_hash = Column(String(255), nullable=True)  # For local auth fallback
     full_name = Column(String(100), nullable=False)
     role = Column(Enum(UserRole), nullable=False, default=UserRole.SALES_REP)
     branch_id = Column(Integer, ForeignKey("branches.id"), nullable=True)
     is_active = Column(Boolean, default=True)
+    
+    # MFA fields
     mfa_enabled = Column(Boolean, default=False)
     mfa_secret = Column(String(255), nullable=True)
+    mfa_backup_codes = Column(String(500), nullable=True)
+    mfa_enabled_at = Column(DateTime, nullable=True)
+    
+    # LDAP fields
+    ldap_username = Column(String(100), nullable=True)
+    auth_method = Column(String(20), default="local")  # local, ldap, oauth
+    
     last_login = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
