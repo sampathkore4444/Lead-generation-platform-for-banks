@@ -331,3 +331,125 @@ async def train_churn_model(
             "training_samples": result.training_samples
         }
     }
+
+
+# ==================== RISK ASSESSMENT ML ====================
+
+@router.post("/risk-assessment")
+async def ml_risk_assessment(
+    lead_id: int = Query(...),
+    credit_score: int = Query(default=650, description="Credit score from ML model"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    ML-based risk assessment (Ensemble method)
+    Combines credit, churn, and behavioral factors
+    """
+    lead = db.query(Lead).filter(Lead.id == lead_id).first()
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead not found")
+    
+    lead_data = {
+        "amount": float(lead.amount) if lead.amount else 0,
+        "product": lead.product,
+        "employment_years": 2,  # Default
+        "existing_debt": 0,
+        "payment_history": 0.8,
+        "collateral": 0
+    }
+    
+    result = ml_engine.predict_risk_assessment(lead_data, credit_score)
+    
+    return {
+        "lead_id": lead_id,
+        "ml_prediction": {
+            "risk_score": result.prediction,
+            "risk_level": "low" if result.prediction < 20 else ("medium" if result.prediction < 40 else ("high" if result.prediction < 60 else "very_high")),
+            "probability": round(result.probability, 3),
+            "confidence": round(result.confidence, 3),
+            "factors": result.factors,
+            "model_version": result.model_version,
+            "model_type": "Ensemble (RF + LR)"
+        }
+    }
+
+
+# ==================== OPTIMAL CONTACT TIME ML ====================
+
+@router.post("/optimal-contact-time")
+async def ml_optimal_contact_time(
+    lead_id: int = Query(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    ML-based optimal contact time (Decision Tree)
+    """
+    lead = db.query(Lead).filter(Lead.id == lead_id).first()
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead not found")
+    
+    lead_data = {
+        "preferred_time": lead.preferred_time or "morning",
+        "preferred_day": "weekday",
+        "historical_best_hour": 10,
+        "morning_response_rate": 0.6,
+        "afternoon_response_rate": 0.5,
+        "evening_response_rate": 0.4,
+        "engagement_score": 0.7,
+        "days_since_created": 1
+    }
+    
+    result = ml_engine.predict_optimal_contact_time(lead_data)
+    
+    return {
+        "lead_id": lead_id,
+        "ml_prediction": {
+            "optimal_time": result.prediction,
+            "probability": round(result.probability, 3),
+            "confidence": round(result.confidence, 3),
+            "model_version": result.model_version,
+            "model_type": "Decision Tree"
+        }
+    }
+
+
+# ==================== VOICE ANALYTICS ML ====================
+
+@router.post("/voice-analytics")
+async def ml_voice_analytics(
+    transcript: str = Query(..., description="Call transcript"),
+    duration_seconds: int = Query(default=300),
+    interruptions: int = Query(default=0),
+    silence_seconds: int = Query(default=30),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    ML-based voice/sentiment analysis (Naive Bayes)
+    """
+    metadata = {
+        "duration_seconds": duration_seconds,
+        "interruptions": interruptions,
+        "silence_seconds": silence_seconds
+    }
+    
+    result = ml_engine.analyze_voice_ml(transcript, metadata)
+    
+    # Extract emotions from factors
+    emotions = {}
+    for factor in result.factors:
+        if factor["feature"] == "Emotions":
+            emotions = factor["value"]
+            break
+    
+    return {
+        "ml_prediction": {
+            "sentiment": result.prediction,
+            "score": round(result.probability, 3),
+            "confidence": round(result.confidence, 3),
+            "emotions": emotions,
+            "model_version": result.model_version,
+            "model_type": "Naive Bayes"
+        }
+    }
