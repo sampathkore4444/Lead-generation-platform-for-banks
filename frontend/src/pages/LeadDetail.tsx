@@ -4,10 +4,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { leadApi } from '../services/api';
 import { Lead, LeadStatus } from '../types';
 import { Button } from '../components/Button';
-import { Input, Select } from '../components/Input';
+import { Select } from '../components/Input';
 import { 
-  ArrowLeft, Phone, User, CreditCard, Clock, 
-  MessageSquare, Building, User as UserIcon
+  ArrowLeft, Phone, CreditCard, Clock, 
+   Building, User as UserIcon
 } from 'lucide-react';
 
 export function LeadDetail() {

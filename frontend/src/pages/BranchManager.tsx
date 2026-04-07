@@ -98,13 +98,6 @@ export function BranchManager() {
     }));
   };
 
-  const dateRangeLabels: Record<string, string> = {
-    today: 'Today',
-    week: 'This Week',
-    month: 'This Month',
-    all: 'All Time',
-  };
-
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
