@@ -1,8 +1,6 @@
 // Chatbot Component
 import { useState } from 'react';
 import { MessageCircle, Send, X, Bot, Loader } from 'lucide-react';
-import { Button } from './Button';
-import { Input } from './Input';
 
 interface ChatMessage {
   id: string;
