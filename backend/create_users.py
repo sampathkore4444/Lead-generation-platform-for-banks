@@ -5,15 +5,13 @@ import sys
 
 sys.path.insert(0, "/app")
 
+import bcrypt
 from src.config.database import SessionLocal
 from src.models.user import User
-from passlib.context import CryptContext
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
-def get_password_hash(password: str) -> str:
-    return pwd_context.hash(password)
+def hash_password(password: str) -> str:
+    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
 
 
 db = SessionLocal()
@@ -27,7 +25,7 @@ try:
         branch_id=1,
         is_active=True,
     )
-    admin.password_hash = get_password_hash("admin123")
+    admin.hashed_password = hash_password("admin123")
     db.add(admin)
 
     # Create sales rep user
@@ -39,7 +37,7 @@ try:
         branch_id=1,
         is_active=True,
     )
-    sales.password_hash = get_password_hash("sales123")
+    sales.hashed_password = hash_password("sales123")
     db.add(sales)
 
     # Create branch manager
@@ -51,7 +49,7 @@ try:
         branch_id=1,
         is_active=True,
     )
-    manager.password_hash = get_password_hash("manager123")
+    manager.hashed_password = hash_password("manager123")
     db.add(manager)
 
     # Create compliance officer
@@ -63,7 +61,7 @@ try:
         branch_id=1,
         is_active=True,
     )
-    compliance.password_hash = get_password_hash("compliance123")
+    compliance.hashed_password = hash_password("compliance123")
     db.add(compliance)
 
     db.commit()
