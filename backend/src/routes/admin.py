@@ -14,7 +14,7 @@ from ..services.anonymization_service import (
     ScheduledJobService,
 )
 
-router = APIRouter(prefix="/api/v1/admin", tags=["Admin"])
+router = APIRouter(tags=["Admin"])
 
 
 # ==================== ANONYMIZATION ====================

@@ -10,7 +10,7 @@ from ..middleware.auth import get_current_user
 from ..models.user import User
 from ..services.mfa_service import MFAService, CaptchaService
 
-router = APIRouter(prefix="/api/v1/mfa", tags=["MFA"])
+router = APIRouter(tags=["MFA"])
 
 
 @router.post("/setup")

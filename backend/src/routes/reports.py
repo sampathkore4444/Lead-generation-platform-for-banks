@@ -12,7 +12,7 @@ from ..middleware.auth import get_current_user
 from ..models.user import User
 from ..services.report_service import ReportService
 
-router = APIRouter(prefix="/api/v1/reports", tags=["Reports"])
+router = APIRouter(tags=["Reports"])
 
 
 @router.get("/leads/pdf")

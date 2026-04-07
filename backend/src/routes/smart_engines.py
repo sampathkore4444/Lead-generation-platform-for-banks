@@ -13,7 +13,7 @@ from ..models.user import User
 from ..models.lead import Lead
 from ..services.smart_engines_service import smart_engines
 
-router = APIRouter(prefix="/api/v1/smart-engines", tags=["Smart Engines"])
+router = APIRouter(tags=["Smart Engines"])
 
 
 # ==================== CREDIT SCORING ====================
