@@ -16,12 +16,12 @@ def hash_password(password: str) -> str:
 
 db = SessionLocal()
 try:
-    # Create admin user
+    # Create IT Admin user
     admin = User(
         email="admin@stbank.la",
         username="admin",
         full_name="System Administrator",
-        role="admin",
+        role="IT_ADMIN",
         branch_id=1,
         is_active=True,
     )
@@ -33,7 +33,7 @@ try:
         email="sales@stbank.la",
         username="sales",
         full_name="Sales Representative",
-        role="sales_rep",
+        role="SALES_REP",
         branch_id=1,
         is_active=True,
     )
@@ -45,7 +45,7 @@ try:
         email="manager@stbank.la",
         username="manager",
         full_name="Branch Manager",
-        role="branch_manager",
+        role="BRANCH_MANAGER",
         branch_id=1,
         is_active=True,
     )
@@ -57,7 +57,7 @@ try:
         email="compliance@stbank.la",
         username="compliance",
         full_name="Compliance Officer",
-        role="compliance",
+        role="COMPLIANCE_OFFICER",
         branch_id=1,
         is_active=True,
     )
@@ -68,7 +68,7 @@ try:
     print("Default users created successfully!")
     print("")
     print("Login credentials:")
-    print("  Admin: admin@stbank.la / admin123")
+    print("  IT Admin: admin@stbank.la / admin123")
     print("  Sales Rep: sales@stbank.la / sales123")
     print("  Branch Manager: manager@stbank.la / manager123")
     print("  Compliance: compliance@stbank.la / compliance123")
