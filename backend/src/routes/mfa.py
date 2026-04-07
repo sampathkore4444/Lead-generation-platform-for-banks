@@ -130,10 +130,13 @@ async def get_captcha():
 
 
 @router.post("/captcha/verify")
-async def verify_captcha(token: str, answer: str):
+async def verify_captcha(request: Request):
     """
     Verify CAPTCHA answer
     """
+    body = await request.json()
+    token = body.get("token")
+    answer = body.get("answer")
     challenge = captcha_store.get(token)
 
     if not challenge:
