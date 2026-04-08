@@ -117,8 +117,16 @@ class LeadService:
         limit: int = 100,
         offset: int = 0,
     ) -> List[Lead]:
-        """Get leads for a branch (manager view)"""
-        query = db.query(Lead).filter(Lead.branch_id == branch_id)
+        """Get leads for a branch (manager view)
+
+        Includes:
+        - Leads assigned to this branch
+        - Unassigned leads (branch_id is NULL) - so managers can assign them
+        """
+        # Include leads for this branch OR unassigned leads
+        query = db.query(Lead).filter(
+            or_(Lead.branch_id == branch_id, Lead.branch_id.is_(None))
+        )
 
         if status:
             query = query.filter(Lead.status == status)
@@ -213,12 +221,19 @@ class LeadService:
     def get_lead_stats(
         db: Session, branch_id: Optional[int] = None, user_id: Optional[int] = None
     ) -> LeadStatsResponse:
-        """Get lead statistics"""
+        """Get lead statistics
+        
+        For branch managers: includes unassigned leads (branch_id is NULL)
+        For sales reps: only shows leads assigned to them
+        """
         # Base query
         query = db.query(Lead)
 
         if branch_id:
-            query = query.filter(Lead.branch_id == branch_id)
+            # Include leads for this branch OR unassigned leads
+            query = query.filter(
+                or_(Lead.branch_id == branch_id, Lead.branch_id.is_(None))
+            )
 
         if user_id:
             query = query.filter(Lead.assigned_to == user_id)

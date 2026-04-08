@@ -1,5 +1,5 @@
-// Dashboard Page - Sales Rep Kanban View
-import { useState, useEffect } from 'react';
+// Dashboard Page - Sales Rep Kanban View with Drag and Drop
+import { useState, useEffect, DragEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { leadApi } from '../services/api';
 import { LeadListItem, LeadStats, LeadStatus } from '../types';
@@ -10,12 +10,20 @@ import {
 } from 'lucide-react';
 import { clearTokens, getAccessToken } from '../services/api';
 
+const COLUMNS = [
+  { status: LeadStatus.NEW, title: 'New', icon: Clock, color: 'yellow' },
+  { status: LeadStatus.CONTACTED, title: 'Contacted', icon: PhoneIncoming, color: 'blue' },
+  { status: LeadStatus.QUALIFIED, title: 'Qualified', icon: UserCheck, color: 'purple' },
+  { status: LeadStatus.CONVERTED, title: 'Converted', icon: UserPlus, color: 'green' },
+];
+
 export function Dashboard() {
   const navigate = useNavigate();
   const [leads, setLeads] = useState<LeadListItem[]>([]);
   const [stats, setStats] = useState<LeadStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<LeadStatus | null>(null);
+  const [draggedLead, setDraggedLead] = useState<LeadListItem | null>(null);
+  const [dragOverColumn, setDragOverColumn] = useState<LeadStatus | null>(null);
 
   useEffect(() => {
     const token = getAccessToken();
@@ -29,7 +37,7 @@ export function Dashboard() {
   const loadData = async () => {
     try {
       const [leadsData, statsData] = await Promise.all([
-        leadApi.getLeads(activeTab || undefined),
+        leadApi.getLeads(),
         leadApi.getLeadStats(),
       ]);
       setLeads(leadsData);
@@ -69,15 +77,46 @@ export function Dashboard() {
     }
   };
 
-  const getStatusBadge = (status: LeadStatus) => {
-    const badges = {
-      [LeadStatus.NEW]: { bg: 'bg-yellow-100', text: 'text-yellow-800', icon: Clock },
-      [LeadStatus.CONTACTED]: { bg: 'bg-blue-100', text: 'text-blue-800', icon: PhoneIncoming },
-      [LeadStatus.QUALIFIED]: { bg: 'bg-purple-100', text: 'text-purple-800', icon: UserCheck },
-      [LeadStatus.CONVERTED]: { bg: 'bg-green-100', text: 'text-green-800', icon: UserPlus },
-      [LeadStatus.LOST]: { bg: 'bg-red-100', text: 'text-red-800', icon: XCircle },
-    };
-    return badges[status];
+  // Drag and Drop handlers
+  const handleDragStart = (e: DragEvent<HTMLDivElement>, lead: LeadListItem) => {
+    setDraggedLead(lead);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', lead.id.toString());
+    // Add a transparent drag image
+    const dragImage = e.currentTarget.cloneNode(true) as HTMLElement;
+    dragImage.style.opacity = '0.8';
+    document.body.appendChild(dragImage);
+    e.dataTransfer.setDragImage(dragImage, 50, 25);
+    setTimeout(() => document.body.removeChild(dragImage), 0);
+  };
+
+  const handleDragOver = (e: DragEvent<HTMLDivElement>, status: LeadStatus) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverColumn(status);
+  };
+
+  const handleDragLeave = () => {
+    setDragOverColumn(null);
+  };
+
+  const handleDrop = (e: DragEvent<HTMLDivElement>, newStatus: LeadStatus) => {
+    e.preventDefault();
+    setDragOverColumn(null);
+    
+    if (draggedLead && draggedLead.status !== newStatus) {
+      handleStatusChange(draggedLead.id, newStatus);
+    }
+    setDraggedLead(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedLead(null);
+    setDragOverColumn(null);
+  };
+
+  const getLeadsByStatus = (status: LeadStatus) => {
+    return leads.filter(l => l.status === status);
   };
 
   const formatAge = (minutes: number) => {
@@ -180,165 +219,72 @@ export function Dashboard() {
       {/* Kanban Board */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* New Column */}
-          <div className="bg-gray-100 rounded-xl p-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-                <Clock className="w-4 h-4 text-yellow-600" />
-                New ({leads.filter(l => l.status === LeadStatus.NEW).length})
-              </h3>
-            </div>
-            <div className="space-y-3">
-              {leads
-                .filter(l => l.status === LeadStatus.NEW)
-                .map(lead => (
-                  <LeadCard
-                    key={lead.id}
-                    lead={lead}
-                    onStatusChange={handleStatusChange}
-                    formatAge={formatAge}
-                  />
-                ))}
-            </div>
-          </div>
-
-          {/* Contacted Column */}
-          <div className="bg-gray-100 rounded-xl p-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-                <PhoneIncoming className="w-4 h-4 text-blue-600" />
-                Contacted ({leads.filter(l => l.status === LeadStatus.CONTACTED).length})
-              </h3>
-            </div>
-            <div className="space-y-3">
-              {leads
-                .filter(l => l.status === LeadStatus.CONTACTED)
-                .map(lead => (
-                  <LeadCard
-                    key={lead.id}
-                    lead={lead}
-                    onStatusChange={handleStatusChange}
-                    formatAge={formatAge}
-                  />
-                ))}
-            </div>
-          </div>
-
-          {/* Qualified Column */}
-          <div className="bg-gray-100 rounded-xl p-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-                <UserCheck className="w-4 h-4 text-purple-600" />
-                Qualified ({leads.filter(l => l.status === LeadStatus.QUALIFIED).length})
-              </h3>
-            </div>
-            <div className="space-y-3">
-              {leads
-                .filter(l => l.status === LeadStatus.QUALIFIED)
-                .map(lead => (
-                  <LeadCard
-                    key={lead.id}
-                    lead={lead}
-                    onStatusChange={handleStatusChange}
-                    formatAge={formatAge}
-                  />
-                ))}
-            </div>
-          </div>
-
-          {/* Converted Column */}
-          <div className="bg-gray-100 rounded-xl p-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-                <UserPlus className="w-4 h-4 text-green-600" />
-                Converted ({leads.filter(l => l.status === LeadStatus.CONVERTED).length})
-              </h3>
-            </div>
-            <div className="space-y-3">
-              {leads
-                .filter(l => l.status === LeadStatus.CONVERTED)
-                .map(lead => (
-                  <LeadCard
-                    key={lead.id}
-                    lead={lead}
-                    onStatusChange={handleStatusChange}
-                    formatAge={formatAge}
-                  />
-                ))}
-            </div>
-          </div>
+          {COLUMNS.map(column => {
+            const columnLeads = getLeadsByStatus(column.status);
+            const Icon = column.icon;
+            
+            return (
+              <div
+                key={column.status}
+                className={`bg-gray-100 rounded-xl p-4 min-h-[500px] transition-all ${
+                  dragOverColumn === column.status ? 'ring-2 ring-primary-500 bg-primary-50' : ''
+                }`}
+                onDragOver={(e) => handleDragOver(e, column.status)}
+                onDragLeave={handleDragLeave}
+                onDrop={(e) => handleDrop(e, column.status)}
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                    <Icon className={`w-4 h-4 text-${column.color}-600`} />
+                    {column.title} ({columnLeads.length})
+                  </h3>
+                </div>
+                <div className="space-y-3">
+                  {columnLeads.map(lead => (
+                    <div
+                      key={lead.id}
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, lead)}
+                      onDragEnd={handleDragEnd}
+                      className={`bg-white rounded-lg border border-gray-200 p-3 cursor-move hover:shadow-card-hover transition-all ${
+                        draggedLead?.id === lead.id ? 'opacity-50 scale-95' : ''
+                      }`}
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <p className="font-medium text-gray-900 text-sm">{lead.full_name}</p>
+                          <p className="text-xs text-gray-500">{lead.phone_masked}</p>
+                        </div>
+                        <span className="text-xs text-gray-400">{formatAge(lead.age_minutes)}</span>
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">
+                          {lead.product === 'savings_account' ? 'Savings' : 
+                           lead.product === 'personal_loan' ? 'Personal Loan' :
+                           lead.product === 'home_loan' ? 'Home Loan' :
+                           lead.product === 'credit_card' ? 'Credit Card' : lead.product}
+                        </span>
+                        {lead.preferred_time && (
+                          <span className="text-xs text-gray-400">
+                            {lead.preferred_time === 'morning' ? '🌅' : 
+                             lead.preferred_time === 'afternoon' ? '☀️' : '🌆'}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  {columnLeads.length === 0 && (
+                    <div className="text-center py-8 text-gray-400 text-sm border-2 border-dashed border-gray-200 rounded-lg">
+                      Drop leads here
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
-    </div>
-  );
-}
-
-// Lead Card Component
-interface LeadCardProps {
-  lead: LeadListItem;
-  onStatusChange: (id: number, status: LeadStatus) => void;
-  formatAge: (minutes: number) => string;
-}
-
-function LeadCard({ lead, onStatusChange, formatAge }: LeadCardProps) {
-  const [showActions, setShowActions] = useState(false);
-
-  const productLabels: Record<string, string> = {
-    savings_account: 'Savings',
-    personal_loan: 'Personal Loan',
-    home_loan: 'Home Loan',
-    credit_card: 'Credit Card',
-  };
-
-  return (
-    <div 
-      className="bg-white rounded-lg border border-gray-200 p-3 cursor-pointer hover:shadow-card-hover transition-all"
-      onClick={() => setShowActions(!showActions)}
-    >
-      <div className="flex justify-between items-start mb-2">
-        <div>
-          <p className="font-medium text-gray-900 text-sm">{lead.full_name}</p>
-          <p className="text-xs text-gray-500">{lead.phone_masked}</p>
-        </div>
-        <span className="text-xs text-gray-400">{formatAge(lead.age_minutes)}</span>
-      </div>
-      
-      <div className="flex items-center justify-between">
-        <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">
-          {productLabels[lead.product] || lead.product}
-        </span>
-      </div>
-
-      {showActions && (
-        <div className="mt-3 pt-3 border-t border-gray-100 grid grid-cols-2 gap-2">
-          {lead.status === LeadStatus.NEW && (
-            <Button size="sm" onClick={() => onStatusChange(lead.id, LeadStatus.CONTACTED)}>
-              Mark Contacted
-            </Button>
-          )}
-          {lead.status === LeadStatus.CONTACTED && (
-            <Button size="sm" onClick={() => onStatusChange(lead.id, LeadStatus.QUALIFIED)}>
-              Qualify
-            </Button>
-          )}
-          {lead.status === LeadStatus.QUALIFIED && (
-            <Button size="sm" onClick={() => onStatusChange(lead.id, LeadStatus.CONVERTED)}>
-              Convert
-            </Button>
-          )}
-          <Button 
-            size="sm" 
-            variant="outline"
-            onClick={() => onStatusChange(lead.id, LeadStatus.LOST)}
-          >
-            Lost
-          </Button>
-          <Button size="sm" variant="secondary">
-            <Phone className="w-4 h-4 mr-1" />
-            Call
-          </Button>
-        </div>
-      )}
     </div>
   );
 }

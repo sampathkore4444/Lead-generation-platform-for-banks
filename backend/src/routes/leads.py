@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from typing import Optional, List
 import csv
 import io
+from datetime import datetime, timedelta
 
 from ..config.database import get_db
 from ..schemas.lead import (
@@ -152,7 +153,9 @@ async def get_leads(
             ),
             created_at=lead.created_at,
             age_minutes=(
-                int((lead.created_at).total_seconds() / 60) if lead.created_at else 0
+                int((datetime.utcnow() - lead.created_at).total_seconds() / 60)
+                if lead.created_at
+                else 0
             ),
         )
         for lead in leads
