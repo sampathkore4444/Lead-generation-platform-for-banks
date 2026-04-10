@@ -46,8 +46,11 @@ export enum PreferredTime {
 
 export enum LeadStatus {
   NEW = 'new',
-  CONTACTED = 'contacted',
-  QUALIFIED = 'qualified',
+  INITIAL_CONTACT = 'initial_contact',
+  NEEDS_ASSESSMENT = 'needs_assessment',
+  QUALIFICATION = 'qualification',
+  PROPOSAL = 'proposal',
+  NEGOTIATION = 'negotiation',
   CONVERTED = 'converted',
   LOST = 'lost',
 }
@@ -139,4 +142,14 @@ export interface DuplicateCheck {
   original_lead_id: number | null;
   original_submission_date: string | null;
   message: string;
+}
+
+// AI Suggestion Types
+export interface NextBestAction {
+  lead_id: number;
+  suggested_stage: string;
+  action: string;
+  reason: string;
+  urgency: 'high' | 'medium' | 'low';
+  tips: string[];
 }

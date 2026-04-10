@@ -23,9 +23,37 @@ async def login(
 ):
     """
     Authenticate user and return access token.
-    Supports both username and email.
+    Supports both username and email (form data).
     """
     user = AuthService.authenticate_user(db, form_data.username, form_data.password)
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="User account is disabled"
+        )
+
+    # Update last login
+    AuthService.update_last_login(db, user)
+
+    # Create tokens
+    tokens = AuthService.create_tokens(user.username)
+
+    return tokens
+
+
+@router.post("/login/json", response_model=Token)
+async def login_json(credentials: UserLogin, db: Session = Depends(get_db)):
+    """
+    Authenticate user using JSON body with username/email and password.
+    """
+    user = AuthService.authenticate_user(db, credentials.username, credentials.password)
 
     if not user:
         raise HTTPException(

@@ -27,11 +27,14 @@ class PreferredTime(str, enum.Enum):
 
 
 class LeadStatus(str, enum.Enum):
-    """Lead status enumeration"""
+    """Lead status enumeration - Banking Sales Lifecycle"""
 
     NEW = "new"
-    CONTACTED = "contacted"
-    QUALIFIED = "qualified"
+    INITIAL_CONTACT = "initial_contact"
+    NEEDS_ASSESSMENT = "needs_assessment"
+    QUALIFICATION = "qualification"
+    PROPOSAL = "proposal"
+    NEGOTIATION = "negotiation"
     CONVERTED = "converted"
     LOST = "lost"
 

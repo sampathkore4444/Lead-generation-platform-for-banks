@@ -252,11 +252,14 @@ export function LeadDetail() {
                   value={lead.status}
                   onChange={(e) => handleStatusChange(e.target.value as LeadStatus)}
                   options={[
-                    { value: LeadStatus.NEW, label: 'New' },
-                    { value: LeadStatus.CONTACTED, label: 'Contacted' },
-                    { value: LeadStatus.QUALIFIED, label: 'Qualified' },
-                    { value: LeadStatus.CONVERTED, label: 'Converted' },
-                    { value: LeadStatus.LOST, label: 'Lost' },
+                    { value: LeadStatus.NEW, label: '🆕 New' },
+                    { value: LeadStatus.INITIAL_CONTACT, label: '📞 Initial Contact' },
+                    { value: LeadStatus.NEEDS_ASSESSMENT, label: '📋 Needs Assessment' },
+                    { value: LeadStatus.QUALIFICATION, label: '✅ Qualification' },
+                    { value: LeadStatus.PROPOSAL, label: '📝 Proposal' },
+                    { value: LeadStatus.NEGOTIATION, label: '🤝 Negotiation' },
+                    { value: LeadStatus.CONVERTED, label: '🎉 Converted' },
+                    { value: LeadStatus.LOST, label: '❌ Lost' },
                   ]}
                 />
 
@@ -266,28 +269,49 @@ export function LeadDetail() {
                     size="sm"
                     onClick={() => handleStatusChange(LeadStatus.NEW)}
                   >
-                    New
+                    🆕 New
                   </Button>
                   <Button
-                    variant={lead.status === LeadStatus.CONTACTED ? 'primary' : 'outline'}
+                    variant={lead.status === LeadStatus.INITIAL_CONTACT ? 'primary' : 'outline'}
                     size="sm"
-                    onClick={() => handleStatusChange(LeadStatus.CONTACTED)}
+                    onClick={() => handleStatusChange(LeadStatus.INITIAL_CONTACT)}
                   >
-                    Contacted
+                    📞 Initial Contact
                   </Button>
                   <Button
-                    variant={lead.status === LeadStatus.QUALIFIED ? 'primary' : 'outline'}
+                    variant={lead.status === LeadStatus.NEEDS_ASSESSMENT ? 'primary' : 'outline'}
                     size="sm"
-                    onClick={() => handleStatusChange(LeadStatus.QUALIFIED)}
+                    onClick={() => handleStatusChange(LeadStatus.NEEDS_ASSESSMENT)}
                   >
-                    Qualified
+                    📋 Needs Assessment
+                  </Button>
+                  <Button
+                    variant={lead.status === LeadStatus.QUALIFICATION ? 'primary' : 'outline'}
+                    size="sm"
+                    onClick={() => handleStatusChange(LeadStatus.QUALIFICATION)}
+                  >
+                    ✅ Qualification
+                  </Button>
+                  <Button
+                    variant={lead.status === LeadStatus.PROPOSAL ? 'primary' : 'outline'}
+                    size="sm"
+                    onClick={() => handleStatusChange(LeadStatus.PROPOSAL)}
+                  >
+                    📝 Proposal
+                  </Button>
+                  <Button
+                    variant={lead.status === LeadStatus.NEGOTIATION ? 'primary' : 'outline'}
+                    size="sm"
+                    onClick={() => handleStatusChange(LeadStatus.NEGOTIATION)}
+                  >
+                    🤝 Negotiation
                   </Button>
                   <Button
                     variant={lead.status === LeadStatus.CONVERTED ? 'primary' : 'outline'}
                     size="sm"
                     onClick={() => handleStatusChange(LeadStatus.CONVERTED)}
                   >
-                    Converted
+                    🎉 Converted
                   </Button>
                 </div>
 

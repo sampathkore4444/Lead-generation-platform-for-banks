@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from typing import Optional, List
+from pydantic import BaseModel
 import csv
 import io
 from datetime import datetime, timedelta
@@ -352,3 +353,303 @@ async def export_leads_csv(
         media_type="text/csv",
         headers={"Content-Disposition": "attachment; filename=leads_export.csv"},
     )
+
+
+# ============ AI Suggestions ============
+
+
+class NextBestActionResponse(BaseModel):
+    """Schema for next best action response"""
+
+    lead_id: int
+    suggested_stage: str
+    action: str
+    reason: str
+    urgency: str  # high, medium, low
+    tips: List[str]
+
+
+@router.get("/suggestions/{lead_id}", response_model=NextBestActionResponse)
+async def get_lead_suggestion(
+    lead_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Get AI-powered next best action for a lead.
+    Based on lead data and current stage, suggest the next best action.
+    """
+    lead = LeadService.get_lead(db, lead_id)
+
+    if not lead:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Lead not found"
+        )
+
+    # Determine suggestion based on current status
+    stage_suggestions = {
+        "new": {
+            "suggested_stage": "initial_contact",
+            "action": "Make first contact call",
+            "reason": "Lead is new and needs immediate first contact",
+            "urgency": "high",
+            "tips": [
+                "Call within 30 minutes for best conversion",
+                "Introduce yourself and STBank products",
+                "Ask about their needs and preferences",
+            ],
+        },
+        "initial_contact": {
+            "suggested_stage": "needs_assessment",
+            "action": "Gather requirements",
+            "reason": "First contact made, assess customer needs",
+            "urgency": "high",
+            "tips": [
+                "Document customer requirements",
+                "Identify product fit",
+                "Schedule follow-up call",
+            ],
+        },
+        "needs_assessment": {
+            "suggested_stage": "qualification",
+            "action": "Check eligibility",
+            "reason": "Requirements gathered, verify eligibility",
+            "urgency": "medium",
+            "tips": [
+                "Verify ID documents",
+                "Check credit history",
+                "Confirm income requirements",
+            ],
+        },
+        "qualification": {
+            "suggested_stage": "proposal",
+            "action": "Prepare proposal",
+            "reason": "Lead qualified, prepare product proposal",
+            "urgency": "medium",
+            "tips": [
+                "Prepare personalized product offer",
+                "Calculate optimal terms",
+                "Prepare comparison with competitors",
+            ],
+        },
+        "proposal": {
+            "suggested_stage": "negotiation",
+            "action": "Present and negotiate",
+            "reason": "Proposal presented, discuss terms",
+            "urgency": "medium",
+            "tips": [
+                "Present proposal to customer",
+                "Address any objections",
+                "Negotiate terms if needed",
+            ],
+        },
+        "negotiation": {
+            "suggested_stage": "converted",
+            "action": "Close the deal",
+            "reason": "Terms agreed, finalize the account opening",
+            "urgency": "high",
+            "tips": [
+                "Schedule branch visit for account opening",
+                "Prepare final documents",
+                "Celebrate the conversion!",
+            ],
+        },
+        "converted": {
+            "suggested_stage": "converted",
+            "action": "Maintain relationship",
+            "reason": "Lead converted, focus on retention",
+            "urgency": "low",
+            "tips": [
+                "Send welcome package",
+                "Schedule 1-week follow-up",
+                "Cross-sell other products",
+            ],
+        },
+        "lost": {
+            "suggested_stage": "lost",
+            "action": "Review and learn",
+            "reason": "Lead lost, analyze for improvements",
+            "urgency": "low",
+            "tips": [
+                "Document loss reason",
+                "Ask for feedback",
+                "Add to nurture list for future",
+            ],
+        },
+    }
+
+    current_status = lead.status.value if lead.status else "new"
+    suggestion = stage_suggestions.get(current_status, stage_suggestions["new"])
+
+    # Check if lead is stale (not contacted in 24h)
+    from datetime import datetime, timedelta
+
+    stale_threshold = datetime.utcnow() - timedelta(hours=24)
+    is_stale = lead.status in ["new", "initial_contact", "needs_assessment"] and (
+        not lead.first_contact_at or lead.created_at < stale_threshold
+    )
+
+    if is_stale and suggestion["urgency"] != "high":
+        suggestion["urgency"] = "high"
+        suggestion["reason"] = f"⚠️ Lead is stale - not contacted in 24h!"
+        suggestion["tips"].insert(0, "URGENT: Contact immediately!")
+
+    return NextBestActionResponse(
+        lead_id=lead_id,
+        suggested_stage=suggestion["suggested_stage"],
+        action=suggestion["action"],
+        reason=suggestion["reason"],
+        urgency=suggestion["urgency"],
+        tips=suggestion["tips"],
+    )
+
+
+# ============ Automation Routes ============
+
+from ..services.automation_service import AutomationService
+
+
+@router.post("/automation/call/{lead_id}")
+async def trigger_call_automation(
+    lead_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Trigger automation when a call is made to a lead.
+    Automatically moves lead from NEW to INITIAL_CONTACT stage.
+    """
+    lead = AutomationService.process_call_made(db, lead_id, current_user.id)
+
+    if not lead:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Lead not found"
+        )
+
+    return {
+        "success": True,
+        "message": f"Call logged for lead {lead_id}",
+        "lead_id": lead.id,
+        "new_stage": lead.stage.value,
+        "auto_progressed": True,
+    }
+
+
+@router.post("/automation/whatsapp/{lead_id}")
+async def trigger_whatsapp_automation(
+    lead_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Trigger automation when a WhatsApp message is sent to a lead.
+    Automatically moves lead from NEW to INITIAL_CONTACT stage.
+    """
+    lead = AutomationService.process_whatsapp_sent(db, lead_id, current_user.id)
+
+    if not lead:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Lead not found"
+        )
+
+    return {
+        "success": True,
+        "message": f"WhatsApp message logged for lead {lead_id}",
+        "lead_id": lead.id,
+        "new_stage": lead.stage.value,
+        "auto_progressed": True,
+    }
+
+
+@router.post("/automation/line/{lead_id}")
+async def trigger_line_automation(
+    lead_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Trigger automation when a LINE message is sent to a lead.
+    Automatically moves lead from NEW to INITIAL_CONTACT stage.
+    """
+    lead = AutomationService.process_line_sent(db, lead_id, current_user.id)
+
+    if not lead:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Lead not found"
+        )
+
+    return {
+        "success": True,
+        "message": f"LINE message logged for lead {lead_id}",
+        "lead_id": lead.id,
+        "new_stage": lead.stage.value,
+        "auto_progressed": True,
+    }
+
+
+@router.post("/automation/document-verified/{lead_id}")
+async def trigger_document_automation(
+    lead_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Trigger automation when documents are verified for a lead.
+    Automatically moves lead to QUALIFICATION stage.
+    """
+    lead = AutomationService.process_document_verified(db, lead_id, current_user.id)
+
+    if not lead:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Lead not found"
+        )
+
+    return {
+        "success": True,
+        "message": f"Document verification logged for lead {lead_id}",
+        "lead_id": lead.id,
+        "new_stage": lead.stage.value,
+        "auto_progressed": True,
+    }
+
+
+@router.post("/automation/process-stale")
+async def process_stale_leads(
+    stale_hours: int = Query(
+        24, description="Hours after which lead is considered stale"
+    ),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_sales_rep),
+):
+    """
+    Process all stale leads and auto-progress them to next stage.
+    Typically called by a scheduled job.
+    """
+    updated_leads = AutomationService.process_stale_leads(db, stale_hours)
+
+    return {
+        "success": True,
+        "message": f"Processed {len(updated_leads)} stale leads",
+        "processed_count": len(updated_leads),
+        "stale_hours": stale_hours,
+        "updated_leads": [
+            {"id": lead.id, "name": lead.full_name, "old_stage": lead.stage.value}
+            for lead in updated_leads
+        ],
+    }
+
+
+@router.get("/automation/stale-report")
+async def get_stale_leads_report(
+    stale_hours: int = Query(
+        24, description="Hours after which lead is considered stale"
+    ),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Get a report of stale leads without auto-progressing them.
+    """
+    report = AutomationService.get_stale_leads_report(db, stale_hours)
+
+    return report

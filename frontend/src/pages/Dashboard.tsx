@@ -1,20 +1,24 @@
-// Dashboard Page - Sales Rep Kanban View with Drag and Drop
+// Dashboard Page - Sales Rep Kanban View with Drag and Drop + AI Suggestions
 import { useState, useEffect, DragEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { leadApi } from '../services/api';
-import { LeadListItem, LeadStats, LeadStatus } from '../types';
+import { LeadListItem, LeadStats, LeadStatus, NextBestAction } from '../types';
 import { Button } from '../components/Button';
 import { 
   Phone,  Clock, TrendingUp,  
-  PhoneIncoming, UserCheck, UserPlus, XCircle, Download
+  PhoneIncoming, UserCheck, UserPlus, XCircle, Download, AlertTriangle, Lightbulb, Zap
 } from 'lucide-react';
 import { clearTokens, getAccessToken } from '../services/api';
 
 const COLUMNS = [
-  { status: LeadStatus.NEW, title: 'New', icon: Clock, color: 'yellow' },
-  { status: LeadStatus.CONTACTED, title: 'Contacted', icon: PhoneIncoming, color: 'blue' },
-  { status: LeadStatus.QUALIFIED, title: 'Qualified', icon: UserCheck, color: 'purple' },
-  { status: LeadStatus.CONVERTED, title: 'Converted', icon: UserPlus, color: 'green' },
+  { status: 'new' as const, title: 'New', icon: Clock, color: 'yellow', desc: 'Lead Created' },
+  { status: 'initial_contact' as const, title: 'Initial Contact', icon: PhoneIncoming, color: 'blue', desc: 'First Contact Made' },
+  { status: 'needs_assessment' as const, title: 'Needs Assessment', icon: UserCheck, color: 'indigo', desc: 'Gathering Requirements' },
+  { status: 'qualification' as const, title: 'Qualification', icon: TrendingUp, color: 'purple', desc: 'Checking Eligibility' },
+  { status: 'proposal' as const, title: 'Proposal', icon: UserPlus, color: 'orange', desc: 'Presenting Options' },
+  { status: 'negotiation' as const, title: 'Negotiation', icon: Phone, color: 'pink', desc: 'Discussing Terms' },
+  { status: 'converted' as const, title: 'Converted', icon: UserPlus, color: 'green', desc: 'Account Opened' },
+  { status: 'lost' as const, title: 'Lost', icon: XCircle, color: 'red', desc: 'Not Interested' },
 ];
 
 export function Dashboard() {
@@ -23,7 +27,9 @@ export function Dashboard() {
   const [stats, setStats] = useState<LeadStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [draggedLead, setDraggedLead] = useState<LeadListItem | null>(null);
-  const [dragOverColumn, setDragOverColumn] = useState<LeadStatus | null>(null);
+  const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
+  const [suggestions, setSuggestions] = useState<Record<number, NextBestAction>>({});
+  const [showSuggestions, setShowSuggestions] = useState(true);
 
   useEffect(() => {
     const token = getAccessToken();
@@ -42,6 +48,25 @@ export function Dashboard() {
       ]);
       setLeads(leadsData);
       setStats(statsData);
+      
+      // Load AI suggestions for each lead
+      const suggestionPromises = leadsData.map(async (lead) => {
+        try {
+          const suggestion = await leadApi.getLeadSuggestion(lead.id);
+          return { id: lead.id, suggestion };
+        } catch {
+          return { id: lead.id, suggestion: null };
+        }
+      });
+      
+      const suggestionResults = await Promise.all(suggestionPromises);
+      const suggestionMap: Record<number, NextBestAction> = {};
+      suggestionResults.forEach((result) => {
+        if (result.suggestion) {
+          suggestionMap[result.id] = result.suggestion;
+        }
+      });
+      setSuggestions(suggestionMap);
     } catch (error) {
       console.error('Failed to load data:', error);
     } finally {
@@ -90,7 +115,7 @@ export function Dashboard() {
     setTimeout(() => document.body.removeChild(dragImage), 0);
   };
 
-  const handleDragOver = (e: DragEvent<HTMLDivElement>, status: LeadStatus) => {
+  const handleDragOver = (e: DragEvent<HTMLDivElement>, status: string) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
     setDragOverColumn(status);
@@ -100,12 +125,12 @@ export function Dashboard() {
     setDragOverColumn(null);
   };
 
-  const handleDrop = (e: DragEvent<HTMLDivElement>, newStatus: LeadStatus) => {
+  const handleDrop = (e: DragEvent<HTMLDivElement>, newStatus: string) => {
     e.preventDefault();
     setDragOverColumn(null);
     
     if (draggedLead && draggedLead.status !== newStatus) {
-      handleStatusChange(draggedLead.id, newStatus);
+      handleStatusChange(draggedLead.id, newStatus as LeadStatus);
     }
     setDraggedLead(null);
   };
@@ -115,7 +140,7 @@ export function Dashboard() {
     setDragOverColumn(null);
   };
 
-  const getLeadsByStatus = (status: LeadStatus) => {
+  const getLeadsByStatus = (status: string) => {
     return leads.filter(l => l.status === status);
   };
 
@@ -149,6 +174,14 @@ export function Dashboard() {
               <h1 className="text-xl font-bold text-gray-900">STBank LeadGen</h1>
             </div>
             <div className="flex items-center gap-4">
+              <Button 
+                variant={showSuggestions ? "primary" : "ghost"} 
+                size="sm" 
+                onClick={() => setShowSuggestions(!showSuggestions)}
+              >
+                <Lightbulb className={`w-4 h-4 mr-2 ${showSuggestions ? 'text-yellow-400' : ''}`} />
+                AI Tips
+              </Button>
               <Button variant="ghost" size="sm" onClick={handleExport}>
                 <Download className="w-4 h-4 mr-2" />
                 Export
@@ -217,8 +250,8 @@ export function Dashboard() {
       )}
 
       {/* Kanban Board */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8 overflow-x-auto">
+        <div className="flex gap-4 min-w-max pb-4">
           {COLUMNS.map(column => {
             const columnLeads = getLeadsByStatus(column.status);
             const Icon = column.icon;
@@ -240,16 +273,28 @@ export function Dashboard() {
                   </h3>
                 </div>
                 <div className="space-y-3">
-                  {columnLeads.map(lead => (
+                  {columnLeads.map(lead => {
+                    const suggestion = suggestions[lead.id];
+                    const isStale = suggestion?.urgency === 'high' && lead.age_minutes > 1440;
+                    
+                    return (
                     <div
                       key={lead.id}
                       draggable
                       onDragStart={(e) => handleDragStart(e, lead)}
                       onDragEnd={handleDragEnd}
-                      className={`bg-white rounded-lg border border-gray-200 p-3 cursor-move hover:shadow-card-hover transition-all ${
+                      className={`bg-white rounded-lg border-2 p-3 cursor-move hover:shadow-card-hover transition-all ${
                         draggedLead?.id === lead.id ? 'opacity-50 scale-95' : ''
-                      }`}
+                      } ${isStale ? 'border-red-400' : ''}`}
                     >
+                      {/* Stale Warning */}
+                      {isStale && (
+                        <div className="mb-2 flex items-center gap-1 text-red-600 text-xs font-medium">
+                          <AlertTriangle className="w-3 h-3" />
+                          Stale - Contact Now!
+                        </div>
+                      )}
+                      
                       <div className="flex justify-between items-start mb-2">
                         <div>
                           <p className="font-medium text-gray-900 text-sm">{lead.full_name}</p>
@@ -258,7 +303,7 @@ export function Dashboard() {
                         <span className="text-xs text-gray-400">{formatAge(lead.age_minutes)}</span>
                       </div>
                       
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between mb-2">
                         <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">
                           {lead.product === 'savings_account' ? 'Savings' : 
                            lead.product === 'personal_loan' ? 'Personal Loan' :
@@ -272,8 +317,25 @@ export function Dashboard() {
                           </span>
                         )}
                       </div>
+                      
+                      {/* AI Suggestion */}
+                      {showSuggestions && suggestion && (
+                        <div className={`mt-2 p-2 rounded-lg text-xs ${
+                          suggestion.urgency === 'high' ? 'bg-red-50 border border-red-200' :
+                          suggestion.urgency === 'medium' ? 'bg-yellow-50 border border-yellow-200' :
+                          'bg-blue-50 border border-blue-200'
+                        }`}>
+                          <div className="flex items-center gap-1 font-medium mb-1">
+                            <Zap className="w-3 h-3" />
+                            <span className={suggestion.urgency === 'high' ? 'text-red-700' : 'text-gray-700'}>
+                              {suggestion.action}
+                            </span>
+                          </div>
+                          <p className="text-gray-600 text-xs">{suggestion.reason}</p>
+                        </div>
+                      )}
                     </div>
-                  ))}
+                  )})}
                   {columnLeads.length === 0 && (
                     <div className="text-center py-8 text-gray-400 text-sm border-2 border-dashed border-gray-200 rounded-lg">
                       Drop leads here

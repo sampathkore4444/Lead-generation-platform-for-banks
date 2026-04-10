@@ -12,6 +12,7 @@ import {
   DuplicateCheck,
   User,
   LeadStatus,
+  NextBestAction,
 } from '../types';
 
 const API_URL = ''; // Use relative URLs to leverage Vite proxy
@@ -70,12 +71,10 @@ api.interceptors.response.use(
 
 export const authApi = {
   login: async (credentials: LoginCredentials): Promise<Token> => {
-    const formData = new URLSearchParams();
-    formData.append('username', credentials.username);
-    formData.append('password', credentials.password);
-
-    const response = await api.post<Token>('/auth/login', formData, {
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    // Use JSON endpoint
+    const response = await api.post<Token>('/auth/login/json', {
+      username: credentials.username,
+      password: credentials.password,
     });
     return response.data;
   },
@@ -128,6 +127,11 @@ export const leadApi = {
     return response.data;
   },
 
+  getLeadSuggestion: async (leadId: number): Promise<NextBestAction> => {
+    const response = await api.get<NextBestAction>(`/leads/suggestions/${leadId}`);
+    return response.data;
+  },
+
   getLead: async (id: number): Promise<Lead> => {
     const response = await api.get<Lead>(`/leads/${id}`);
     return response.data;
@@ -150,6 +154,41 @@ export const leadApi = {
     const response = await api.get('/leads/export/csv', {
       params: { status },
       responseType: 'blob',
+    });
+    return response.data;
+  },
+
+  // Automation endpoints
+  triggerCallAutomation: async (leadId: number): Promise<any> => {
+    const response = await api.post(`/leads/automation/call/${leadId}`);
+    return response.data;
+  },
+
+  triggerWhatsappAutomation: async (leadId: number): Promise<any> => {
+    const response = await api.post(`/leads/automation/whatsapp/${leadId}`);
+    return response.data;
+  },
+
+  triggerLineAutomation: async (leadId: number): Promise<any> => {
+    const response = await api.post(`/leads/automation/line/${leadId}`);
+    return response.data;
+  },
+
+  triggerDocumentAutomation: async (leadId: number): Promise<any> => {
+    const response = await api.post(`/leads/automation/document-verified/${leadId}`);
+    return response.data;
+  },
+
+  processStaleLeads: async (staleHours: number = 24): Promise<any> => {
+    const response = await api.post(`/leads/automation/process-stale`, {}, {
+      params: { stale_hours: staleHours },
+    });
+    return response.data;
+  },
+
+  getStaleLeadsReport: async (staleHours: number = 24): Promise<any> => {
+    const response = await api.get(`/leads/automation/stale-report`, {
+      params: { stale_hours: staleHours },
     });
     return response.data;
   },

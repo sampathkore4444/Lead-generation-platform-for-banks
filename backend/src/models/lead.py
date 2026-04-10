@@ -23,13 +23,16 @@ from ..config.database import Base
 
 
 class LeadStatus(str, enum.Enum):
-    """Lead status enumeration"""
+    """Lead status enumeration - Banking Sales Lifecycle"""
 
-    NEW = "new"
-    CONTACTED = "contacted"
-    QUALIFIED = "qualified"
-    CONVERTED = "converted"
-    LOST = "lost"
+    NEW = "new"  # Lead created from form submission
+    INITIAL_CONTACT = "initial_contact"  # First contact attempted
+    NEEDS_ASSESSMENT = "needs_assessment"  # Gathering requirements
+    QUALIFICATION = "qualification"  # Checking eligibility
+    PROPOSAL = "proposal"  # Presenting options
+    NEGOTIATION = "negotiation"  # Discussing terms
+    CONVERTED = "converted"  # Customer converted (opened account)
+    LOST = "lost"  # Lead lost/not interested
 
 
 class ProductType(str, enum.Enum):
@@ -75,6 +78,17 @@ class Lead(Base):
     anonymized_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Automation fields
+    stage = Column(String(50), default="new", nullable=False, index=True)
+    stage_changed_at = Column(DateTime, nullable=True)
+    last_contacted_at = Column(DateTime, nullable=True)
+    last_contact_method = Column(
+        String(20), nullable=True
+    )  # call, whatsapp, line, email
+    documents_verified = Column(Boolean, default=False)
+    documents_verified_at = Column(DateTime, nullable=True)
+    auto_progressed = Column(Boolean, default=False)
 
     # Relationships
     branch = relationship("Branch", back_populates="leads")
